@@ -5,7 +5,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./StakingLocks.sol";
 
@@ -17,7 +16,6 @@ contract StakingPool is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     event RewardPay(uint256 _amount, uint256 _accumulatedFee);
 
     using SafeERC20Upgradeable for IERC20Upgradeable;
-    using SafeMathUpgradeable for uint256;
     IERC20Upgradeable public erc20Deposit;
     IERC20Upgradeable public erc20Reward;
     bool private unlockAll;
