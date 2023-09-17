@@ -4,11 +4,12 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./StakingLocks.sol";
 
-contract StakingPool is Initializable, UUPSUpgradeable, OwnableUpgradeable, StakingLocks {
+contract StakingPool is Initializable, UUPSUpgradeable, OwnableUpgradeable, PausableUpgradeable, StakingLocks {
     event Deposit(LockType _lockType, uint256 _amount, uint256 _amountStacked);
     event Withdraw(uint256 _amount, uint256 _amountWithdraw);
     event Harvest(LockType _lockType, uint256 _amount, uint32 _lastRewardIndex);
@@ -45,6 +46,7 @@ contract StakingPool is Initializable, UUPSUpgradeable, OwnableUpgradeable, Stak
     /* ========== CONSTRUCTOR ========== */
 
     function initialize(address _erc20Deposit, address _erc20Reward) public initializer {
+        __Pausable_init();
         __Ownable_init();
         __UUPSUpgradeable_init();
 
@@ -79,7 +81,7 @@ contract StakingPool is Initializable, UUPSUpgradeable, OwnableUpgradeable, Stak
         withdrawFeePrecision = _feePrecision;
     }
 
-    function deposit(LockType _lockType, uint256 _amount, bool _comp) external {
+    function deposit(LockType _lockType, uint256 _amount, bool _comp) external whenNotPaused {
         require(_amount > 0, "The amount of the deposit must not be zero");
         require(erc20Deposit.allowance(_msgSender(), address(this)) >= _amount, "Not enough allowance");
         LockType lastLock = userLock[_msgSender()];
@@ -124,7 +126,7 @@ contract StakingPool is Initializable, UUPSUpgradeable, OwnableUpgradeable, Stak
         emit Deposit(_lockType, _amount, amountStacked);
     }
 
-    function withdraw(uint256 amount) external {
+    function withdraw(uint256 amount) external whenNotPaused {
         require(userStacked[_msgSender()] >= amount, "Withdrawal amount is more than balance");
         require(userLock[_msgSender()] != LockType.NULL, "You do not have locked tokens");
         require(
@@ -153,6 +155,7 @@ contract StakingPool is Initializable, UUPSUpgradeable, OwnableUpgradeable, Stak
         emit Withdraw(amount, amountWithdraw);
     }
 
+    // admin funding the pool with rewards
     function reward(uint256 amount) external onlyOwner {
         require(amount > 0, "The amount of the reward must not be zero");
         require(erc20Reward.allowance(_msgSender(), address(this)) >= amount, "Not enough allowance");
@@ -183,7 +186,7 @@ contract StakingPool is Initializable, UUPSUpgradeable, OwnableUpgradeable, Stak
         accumulatedFee = 0;
     }
 
-    function compound() public {
+    function compound() public whenNotPaused {
         require(userLock[_msgSender()] != LockType.NULL, "You do not have locked tokens");
         require(address(erc20Deposit) == address(erc20Reward), "Method not available");
         require(userLastReward[_msgSender()] != lastReward, "You have no accumulated reward");
@@ -191,7 +194,7 @@ contract StakingPool is Initializable, UUPSUpgradeable, OwnableUpgradeable, Stak
         _compound(userLock[_msgSender()], amountReward, lastRewardIndex);
     }
 
-    function harvest() public {
+    function harvest() public whenNotPaused {
         require(userLock[_msgSender()] != LockType.NULL, "You do not have locked tokens");
         require(userLastReward[_msgSender()] != lastReward, "You have no accumulated reward");
         (uint256 amountReward, uint32 lastRewardIndex) = getReward(_msgSender(), 0);
