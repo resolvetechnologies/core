@@ -45,7 +45,7 @@ contract StakingPool is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
 
     function initialize(address _erc20Deposit, address _erc20Reward) public initializer {
         __Pausable_init();
-        __Ownable_init();
+        __Ownable_init(_msgSender());
         __UUPSUpgradeable_init();
 
         erc20Deposit = IERC20Upgradeable(_erc20Deposit);
