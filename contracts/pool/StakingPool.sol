@@ -184,7 +184,7 @@ contract StakingPool is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         accumulatedFee = 0;
     }
 
-    function compound() public whenNotPaused {
+    function compound() external whenNotPaused {
         require(userLock[_msgSender()] != LockType.NULL, "You do not have locked tokens");
         require(address(erc20Deposit) == address(erc20Reward), "Method not available");
         require(userLastReward[_msgSender()] != lastReward, "You have no accumulated reward");
@@ -192,7 +192,7 @@ contract StakingPool is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         _compound(userLock[_msgSender()], amountReward, lastRewardIndex);
     }
 
-    function harvest() public whenNotPaused {
+    function harvest() external whenNotPaused {
         require(userLock[_msgSender()] != LockType.NULL, "You do not have locked tokens");
         require(userLastReward[_msgSender()] != lastReward, "You have no accumulated reward");
         (uint256 amountReward, uint32 lastRewardIndex) = getReward(_msgSender(), 0);
