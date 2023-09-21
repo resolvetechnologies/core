@@ -1,4 +1,4 @@
-# Smart Contracts for Kaiketsu Technologies
+# Smart Contracts for Resolve Technologies
 
 Try running some of the following tasks:
 
