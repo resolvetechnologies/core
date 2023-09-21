@@ -1,31 +1,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 import "./StakingLocks.sol";
 
-contract StakingPool is Initializable, UUPSUpgradeable, OwnableUpgradeable, PausableUpgradeable, StakingLocks {
+contract StakingPool is Ownable, Pausable, StakingLocks {
     event Deposit(LockType _lockType, uint256 _amount, uint256 _amountStacked);
     event Withdraw(uint256 _amount, uint256 _amountWithdraw);
     event Harvest(LockType _lockType, uint256 _amount, uint32 _lastRewardIndex);
     event Compound(LockType _lockType, uint256 _amount, uint32 _lastRewardIndex);
     event RewardPay(uint256 _amount, uint256 _accumulatedFee);
 
-    using SafeERC20Upgradeable for IERC20Upgradeable;
-    IERC20Upgradeable public erc20Deposit;
-    IERC20Upgradeable public erc20Reward;
+    using SafeERC20 for IERC20;
+    IERC20 public erc20Deposit;
+    IERC20 public erc20Reward;
     bool private unlockAll;
     uint256 public accumulatedFee;
-    uint256 public depositFeePercent;
-    uint256 public depositFeePrecision;
-    uint256 public withdrawFeePercent;
-    uint256 public withdrawFeePrecision;
-    uint8 public MAX_LOOPS;
-    uint256 public precision;
+    uint256 public depositFeePercent = 0;
+    uint256 public depositFeePrecision = 1000;
+    uint256 public withdrawFeePercent = 0;
+    uint256 public withdrawFeePrecision = 1000;
+    uint8 public constant MAX_LOOPS = 100;
+    uint256 public precision = 10000000000;
     uint32 public lastReward;
 
     struct Reward {
@@ -41,25 +40,11 @@ contract StakingPool is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     mapping(LockType => uint256) public totalStacked;
     mapping(LockType => mapping(uint32 => Reward)) public rewards;
 
-    /* ========== CONSTRUCTOR ========== */
-
-    function initialize(address _erc20Deposit, address _erc20Reward) public initializer {
-        __Pausable_init();
-        __Ownable_init(_msgSender());
-        __UUPSUpgradeable_init();
-
-        erc20Deposit = IERC20Upgradeable(_erc20Deposit);
-        erc20Reward = IERC20Upgradeable(_erc20Reward);
-        depositFeePercent = 0;
-        depositFeePrecision = 1000;
-        withdrawFeePercent = 0;
-        withdrawFeePrecision = 1000;
-        MAX_LOOPS = 100;
-        precision = 10000000000;
+    constructor(address _erc20Deposit, address _erc20Reward) {
+        erc20Deposit = IERC20(_erc20Deposit);
+        erc20Reward = IERC20(_erc20Reward);
         _initLocks();
     }
-
-    /* ========== OTHER FUNCTIONS ========== */
 
     function setUnlockAll(bool _flag) external onlyOwner {
         unlockAll = _flag;
@@ -153,7 +138,6 @@ contract StakingPool is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         emit Withdraw(amount, amountWithdraw);
     }
 
-    // admin funding the pool with rewards
     function reward(uint256 amount) external onlyOwner {
         require(amount > 0, "The amount of the reward must not be zero");
         require(erc20Reward.allowance(_msgSender(), address(this)) >= amount, "Not enough allowance");
@@ -248,9 +232,5 @@ contract StakingPool is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         }
         lastRewardIndex = rewardIterator;
         amount = _amount;
-    }
-
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {
-        // solhint-disable-previous-line no-empty-blocks
     }
 }

@@ -1,19 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+contract StakingLocks {
+    enum LockType { NULL, HOURS1, DAYS30, DAYS180, DAYS365, DAYS730}
 
-contract StakingLocks is Initializable {
-    enum LockType {
-        NULL,
-        HOURS1,
-        DAYS30,
-        DAYS180,
-        DAYS365,
-        DAYS730
-    }
-
-    LockType[5] lockTypes;
+    LockType[5] lockTypes = [LockType.HOURS1, LockType.DAYS30, LockType.DAYS180, LockType.DAYS365, LockType.DAYS730];
 
     struct LockData {
         uint32 period;
@@ -22,15 +13,7 @@ contract StakingLocks is Initializable {
 
     mapping(LockType => LockData) public locks; // All our locks
 
-    function _initLocks() internal onlyInitializing {
-        LockType[5] memory _lockTypes = [
-            LockType.HOURS1,
-            LockType.DAYS30,
-            LockType.DAYS180,
-            LockType.DAYS365,
-            LockType.DAYS730
-        ];
-        lockTypes = _lockTypes;
+    function _initLocks() internal {
         locks[LockType.HOURS1] = LockData(1 hours, 10);
         locks[LockType.DAYS30] = LockData(30 days, 12);
         locks[LockType.DAYS180] = LockData(180 days, 13);
